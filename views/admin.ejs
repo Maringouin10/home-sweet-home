@@ -18,103 +18,111 @@
   </header>
 
   <main class="container admin-main">
+    <% if (saved) { %><div class="banner">✔ Enregistré (<%= saved %>).</div><% } %>
 
-    <% if (saved) { %>
-      <div class="banner">✔ Modifications enregistrées (<%= saved %>).</div>
-    <% } %>
-
-    <!-- 1. Contenu -->
+    <!-- Pages -->
     <section class="panel">
-      <h2>1. Présentation</h2>
-      <form method="post" action="<%= adminPath %>/content">
-        <label>Titre du site
-          <input type="text" name="siteTitle" value="<%= cfg.siteTitle %>" maxlength="120" />
-        </label>
-        <label>Texte d'introduction
-          <textarea name="intro" rows="5" maxlength="5000"><%= cfg.intro %></textarea>
-        </label>
-        <button type="submit">Enregistrer</button>
+      <h2>📄 Pages</h2>
+      <p class="muted">Chaque page est un article que tu composes avec des blocs (texte, image, vidéo, stats…).</p>
+      <ul class="admin-list">
+        <% pages.forEach(function (p) { %>
+          <li>
+            <div class="grow">
+              <a class="page-link" href="<%= adminPath %>/pages/<%= p.id %>"><%= p.icon %> <strong><%= p.title %></strong></a>
+              <% if (p.isHome) { %><span class="tag">accueil</span><% } %>
+              <% if (!p.published) { %><span class="tag warn">masquée</span><% } %>
+              <span class="muted small"><%= p.blockCount %> bloc(s) · /<%= p.slug %></span>
+            </div>
+            <div class="row-actions">
+              <form method="post" action="<%= adminPath %>/pages/<%= p.id %>/move"><input type="hidden" name="dir" value="up" /><button class="mini" title="Monter">▲</button></form>
+              <form method="post" action="<%= adminPath %>/pages/<%= p.id %>/move"><input type="hidden" name="dir" value="down" /><button class="mini" title="Descendre">▼</button></form>
+              <% if (!p.isHome) { %>
+                <form method="post" action="<%= adminPath %>/pages/<%= p.id %>/home"><button class="mini" title="Définir comme accueil">🏠</button></form>
+              <% } %>
+              <a class="btn-link mini" href="<%= adminPath %>/pages/<%= p.id %>">Éditer</a>
+              <% if (!p.isHome) { %>
+                <form method="post" action="<%= adminPath %>/pages/<%= p.id %>/delete" onsubmit="return confirm('Supprimer la page « <%= p.title %> » ?');"><button class="mini danger">✕</button></form>
+              <% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+      <form method="post" action="<%= adminPath %>/pages" class="inline-form">
+        <input type="text" name="icon" value="📄" maxlength="8" class="icon-input" aria-label="icône" />
+        <input type="text" name="title" placeholder="Nom de la nouvelle page" required />
+        <button type="submit">+ Créer une page</button>
       </form>
     </section>
 
-    <!-- 2. Carte -->
+    <!-- Sources de données live -->
     <section class="panel">
-      <h2>2. Carte du terrain</h2>
-      <form method="post" action="<%= adminPath %>/map" enctype="multipart/form-data">
-        <label>Lien d'intégration (iframe, ex. Google My Maps) — prioritaire s'il est rempli
-          <input type="url" name="mapEmbed" value="<%= cfg.map.embed %>"
-            placeholder="https://www.google.com/maps/d/embed?mid=..." />
-        </label>
-        <label>… ou téléverser une image de carte
-          <input type="file" name="mapImage" accept="image/*" />
-        </label>
-        <% if (cfg.map.image) { %>
-          <div class="thumb-row">
-            <img class="thumb" src="/media/<%= cfg.map.image %>" alt="carte" />
-            <label class="checkbox"><input type="checkbox" name="removeMapImage" value="1" /> Supprimer l'image actuelle</label>
-          </div>
-        <% } %>
-        <label>Légende courte
-          <input type="text" name="mapCaption" value="<%= cfg.map.caption %>" maxlength="300" />
-        </label>
-        <label>Description
-          <textarea name="mapDescription" rows="4" maxlength="3000"><%= cfg.map.description %></textarea>
-        </label>
-        <button type="submit">Enregistrer la carte</button>
-      </form>
-    </section>
+      <h2>🔌 Données live (URL → JSON)</h2>
+      <p class="muted">
+        Ajoute une URL qui renvoie du JSON (ex. l'API de tes panneaux solaires).
+        Elle est appelée à chaque affichage. Ensuite tu glisses ses variables dans
+        tes textes et stats, ex. <code>{{solaire.today}} kWh</code>.
+      </p>
 
-    <!-- 3. Galerie -->
-    <section class="panel">
-      <h2>3. Galerie / time-lapse</h2>
-
-      <% if (cfg.gallery.length) { %>
-        <ul class="admin-list">
-          <% cfg.gallery.slice().reverse().forEach(function (g) { %>
-            <li>
-              <div>
-                <strong><%= g.title %></strong>
-                <span class="tag"><%= g.embedUrl ? 'vidéo (lien)' : (g.mediaType || 'texte') %></span>
-              </div>
-              <form method="post" action="<%= adminPath %>/gallery/<%= g.id %>/delete"
-                onsubmit="return confirm('Supprimer « <%= g.title %> » ?');">
-                <button class="danger" type="submit">Supprimer</button>
+      <% if (cfg.sources.length) { %>
+        <div class="sources">
+          <% cfg.sources.forEach(function (s) { %>
+            <div class="source-card">
+              <form method="post" action="<%= adminPath %>/sources">
+                <input type="hidden" name="id" value="<%= s.id %>" />
+                <div class="src-grid">
+                  <label>Nom (variable)
+                    <input type="text" name="name" value="<%= s.name %>" pattern="[a-zA-Z0-9_]+" required />
+                  </label>
+                  <label>Rafraîchir (s)
+                    <input type="number" name="ttl" value="<%= s.ttl %>" min="2" max="3600" />
+                  </label>
+                </div>
+                <label>URL JSON
+                  <input type="url" name="url" value="<%= s.url %>" required />
+                </label>
+                <label>En-têtes HTTP (optionnel, une par ligne « Clé: valeur »)
+                  <textarea name="headers" rows="2" placeholder="Authorization: Bearer xxxxx"><%= s.headers %></textarea>
+                </label>
+                <div class="row-actions">
+                  <button type="submit">Enregistrer</button>
+                  <button type="button" class="btn-link mini" data-preview="<%= s.id %>">Tester / voir les variables</button>
+                  <button formaction="<%= adminPath %>/sources/<%= s.id %>/delete" formmethod="post" class="mini danger" onclick="return confirm('Supprimer la source « <%= s.name %> » ?');" formnovalidate>Supprimer</button>
+                </div>
               </form>
-            </li>
+              <div class="preview" id="preview-<%= s.id %>" hidden></div>
+            </div>
           <% }) %>
-        </ul>
+        </div>
       <% } else { %>
-        <p class="muted">Aucun élément pour l'instant.</p>
+        <p class="muted">Aucune source pour l'instant.</p>
       <% } %>
 
-      <details open>
-        <summary>Ajouter un élément</summary>
-        <form method="post" action="<%= adminPath %>/gallery" enctype="multipart/form-data">
-          <label>Titre
-            <input type="text" name="title" required maxlength="200" placeholder="Ex. Construction de la pergola" />
+      <details>
+        <summary>Ajouter une source</summary>
+        <form method="post" action="<%= adminPath %>/sources">
+          <div class="src-grid">
+            <label>Nom (variable, ex. « solaire »)
+              <input type="text" name="name" pattern="[a-zA-Z0-9_]+" placeholder="solaire" required />
+            </label>
+            <label>Rafraîchir (s)
+              <input type="number" name="ttl" value="30" min="2" max="3600" />
+            </label>
+          </div>
+          <label>URL JSON
+            <input type="url" name="url" placeholder="http://192.168.1.50/api/production" required />
           </label>
-          <label>Description
-            <textarea name="description" rows="3" maxlength="3000"></textarea>
+          <label>En-têtes HTTP (optionnel)
+            <textarea name="headers" rows="2" placeholder="Authorization: Bearer xxxxx"></textarea>
           </label>
-          <label>Photo ou vidéo (mp4/webm, max 200 Mo)
-            <input type="file" name="media" accept="image/*,video/mp4,video/webm" />
-          </label>
-          <label>… ou lien vidéo à intégrer (YouTube, etc.)
-            <input type="url" name="embedUrl" placeholder="https://www.youtube.com/embed/..." />
-          </label>
-          <button type="submit">Ajouter</button>
+          <button type="submit">Ajouter la source</button>
         </form>
       </details>
     </section>
 
-    <!-- 4. Balises NFC / QR -->
+    <!-- Balises NFC / QR -->
     <section class="panel">
-      <h2>4. Balises NFC / QR</h2>
-      <p class="muted">
-        Chaque balise ouvre une page avec le mot de passe déjà inclus.
-        Copie l'URL dans un tag NFC, ou télécharge le QR code à imprimer.
-      </p>
-
+      <h2>🏷️ Balises NFC / QR</h2>
+      <p class="muted">Chaque balise ouvre une page avec le mot de passe déjà inclus.</p>
       <% if (points.length) { %>
         <div class="points">
           <% points.forEach(function (p) { %>
@@ -122,15 +130,12 @@
               <img class="qr" src="<%= adminPath %>/qr/<%= p.id %>.png" alt="QR <%= p.label %>" />
               <div class="point-info">
                 <strong><%= p.label %></strong>
-                <span class="tag"><%= p.destLabel %></span>
+                <span class="tag"><%= p.pageTitle %></span>
                 <% if (p.note) { %><p class="muted small"><%= p.note %></p><% } %>
                 <input class="url-field" type="text" readonly value="<%= p.url %>" onclick="this.select()" />
                 <div class="point-actions">
                   <a class="btn-link" href="<%= adminPath %>/qr/<%= p.id %>.png" download>Télécharger le QR</a>
-                  <form method="post" action="<%= adminPath %>/points/<%= p.id %>/delete"
-                    onsubmit="return confirm('Supprimer la balise « <%= p.label %> » ?');">
-                    <button class="danger" type="submit">Supprimer</button>
-                  </form>
+                  <form method="post" action="<%= adminPath %>/points/<%= p.id %>/delete" onsubmit="return confirm('Supprimer la balise ?');"><button class="danger">Supprimer</button></form>
                 </div>
               </div>
             </div>
@@ -139,43 +144,43 @@
       <% } else { %>
         <p class="muted">Aucune balise pour l'instant.</p>
       <% } %>
-
-      <details open>
+      <details>
         <summary>Ajouter une balise</summary>
         <form method="post" action="<%= adminPath %>/points">
           <label>Emplacement / nom
-            <input type="text" name="label" required maxlength="120" placeholder="Ex. Avant la forêt" />
+            <input type="text" name="label" required placeholder="Ex. Avant la forêt" />
           </label>
-          <label>Cette balise ouvre…
-            <select name="dest">
-              <% destinations.forEach(function (d) { %>
-                <option value="<%= d.value %>"><%= d.label %></option>
-              <% }) %>
+          <label>Cette balise ouvre la page…
+            <select name="pageId">
+              <% pages.forEach(function (p) { %><option value="<%= p.id %>"><%= p.icon %> <%= p.title %></option><% }) %>
             </select>
           </label>
           <label>Note (optionnel)
-            <input type="text" name="note" maxlength="500" placeholder="Ex. clouée sur le poteau du portail" />
+            <input type="text" name="note" placeholder="Ex. clouée sur le poteau du portail" />
           </label>
           <button type="submit">Créer la balise</button>
         </form>
       </details>
     </section>
 
-    <!-- 5. Mot de passe visiteur -->
+    <!-- Réglages -->
     <section class="panel">
-      <h2>5. Mot de passe du site (visiteurs)</h2>
-      <p class="muted">
-        C'est ce mot de passe qui est intégré dans les QR / NFC.
-        Le changer met à jour les balises ci-dessus et déconnecte les anciens visiteurs.
-      </p>
-      <form method="post" action="<%= adminPath %>/password">
-        <label>Nouveau mot de passe visiteur (min. 3 caractères)
+      <h2>⚙️ Réglages</h2>
+      <form method="post" action="<%= adminPath %>/settings">
+        <label>Titre du site
+          <input type="text" name="siteTitle" value="<%= cfg.siteTitle %>" maxlength="120" />
+        </label>
+        <button type="submit">Enregistrer</button>
+      </form>
+      <form method="post" action="<%= adminPath %>/password" style="margin-top:1rem">
+        <label>Mot de passe visiteur (intégré aux QR / NFC, min. 3 caractères)
           <input type="text" name="sitePassword" value="<%= cfg.sitePassword %>" minlength="3" required />
         </label>
         <button type="submit">Changer le mot de passe</button>
       </form>
     </section>
-
   </main>
+
+  <script src="/static/admin.js"></script>
 </body>
 </html>

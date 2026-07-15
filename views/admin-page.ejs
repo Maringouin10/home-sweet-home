@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Éditeur — <%= page.title %></title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="admin">
+  <header class="site-header">
+    <a class="brand" href="<%= adminPath %>">← Administration</a>
+    <nav class="site-nav">
+      <a href="<%= publicUrl %>" target="_blank">Voir la page ↗</a>
+    </nav>
+  </header>
+
+  <main class="container editor-layout">
+    <div class="editor-main">
+      <% if (saved) { %><div class="banner">✔ Enregistré (<%= saved %>).</div><% } %>
+
+      <!-- Réglages de la page -->
+      <section class="panel">
+        <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/settings">
+          <div class="src-grid">
+            <label>Icône <input type="text" name="icon" value="<%= page.icon %>" maxlength="8" class="icon-input" /></label>
+            <label>Adresse (slug) <input type="text" name="slug" value="<%= page.slug %>" /></label>
+          </div>
+          <label>Titre de la page <input type="text" name="title" value="<%= page.title %>" maxlength="120" /></label>
+          <label class="checkbox"><input type="checkbox" name="published" value="1" <%= page.published ? 'checked' : '' %> /> Page visible</label>
+          <% if (isHome) { %><p class="muted small">🏠 C'est la page d'accueil.</p><% } %>
+          <button type="submit">Enregistrer la page</button>
+        </form>
+      </section>
+
+      <!-- Blocs -->
+      <% page.blocks.forEach(function (b, i) { %>
+        <div class="edit-block" id="b-<%= b.id %>">
+          <div class="eb-head">
+            <span class="eb-type"><%= b.type %></span>
+            <div class="eb-actions">
+              <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/move"><input type="hidden" name="dir" value="up" /><button class="mini" <%= i === 0 ? 'disabled' : '' %>>▲</button></form>
+              <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/move"><input type="hidden" name="dir" value="down" /><button class="mini" <%= i === page.blocks.length - 1 ? 'disabled' : '' %>>▼</button></form>
+              <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/delete" onsubmit="return confirm('Supprimer ce bloc ?');"><button class="mini danger">✕</button></form>
+            </div>
+          </div>
+
+          <form class="eb-form" method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>" enctype="multipart/form-data">
+            <% if (b.type === 'heading') { %>
+              <label>Titre <input type="text" name="text" value="<%= b.text %>" data-token="1" /></label>
+              <label>Niveau
+                <select name="level"><option value="1" <%= b.level===1?'selected':'' %>>Grand (H1)</option><option value="2" <%= b.level!==1?'selected':'' %>>Moyen (H2)</option></select>
+              </label>
+
+            <% } else if (b.type === 'text') { %>
+              <label>Texte <span class="muted small">(glisse des variables dedans)</span>
+                <textarea name="body" rows="6" data-token="1"><%= b.body %></textarea>
+              </label>
+
+            <% } else if (b.type === 'stat') { %>
+              <p class="muted small">Une grande statistique. La valeur peut contenir une variable live, ex. <code>{{solaire.today}}</code>.</p>
+              <div class="src-grid">
+                <label>Valeur <input type="text" name="value" value="<%= b.value %>" data-token="1" /></label>
+                <label>Unité <input type="text" name="unit" value="<%= b.unit %>" data-token="1" /></label>
+              </div>
+              <label>Légende <input type="text" name="label" value="<%= b.label %>" data-token="1" /></label>
+              <label>Taille
+                <select name="size"><option value="md" <%= b.size==='md'?'selected':'' %>>Moyen</option><option value="lg" <%= b.size==='lg'?'selected':'' %>>Grand</option><option value="xl" <%= b.size==='xl'?'selected':'' %>>Très grand</option></select>
+              </label>
+
+            <% } else if (b.type === 'image') { %>
+              <% if (b.media) { %><img class="thumb" src="/media/<%= b.media %>" alt="" /><label class="checkbox"><input type="checkbox" name="removeMedia" value="1" /> Retirer l'image</label><% } %>
+              <label>Téléverser une image <input type="file" name="media" accept="image/*" /></label>
+              <label>… ou URL d'image <input type="url" name="src" value="<%= b.src || '' %>" /></label>
+              <label>Légende <input type="text" name="caption" value="<%= b.caption || '' %>" /></label>
+
+            <% } else if (b.type === 'video') { %>
+              <% if (b.media) { %><video class="thumb" src="/media/<%= b.media %>" muted></video><label class="checkbox"><input type="checkbox" name="removeMedia" value="1" /> Retirer la vidéo</label><% } %>
+              <label>Téléverser une vidéo (mp4/webm) <input type="file" name="media" accept="video/mp4,video/webm" /></label>
+              <label>… ou lien à intégrer (YouTube…) <input type="url" name="embedUrl" value="<%= b.embedUrl || '' %>" placeholder="https://www.youtube.com/embed/..." /></label>
+              <label>Légende <input type="text" name="caption" value="<%= b.caption || '' %>" /></label>
+
+            <% } else if (b.type === 'embed') { %>
+              <label>URL à intégrer (iframe, ex. Google My Maps) <input type="url" name="src" value="<%= b.src || '' %>" /></label>
+              <label>Hauteur (px) <input type="number" name="height" value="<%= b.height || 480 %>" min="120" max="1200" /></label>
+
+            <% } else if (b.type === 'divider') { %>
+              <p class="muted small">Séparateur horizontal.</p>
+            <% } %>
+
+            <% if (b.type !== 'divider') { %><button type="submit">Enregistrer le bloc</button><% } %>
+          </form>
+        </div>
+      <% }) %>
+
+      <!-- Ajouter un bloc -->
+      <section class="panel add-block">
+        <h3>Ajouter un bloc</h3>
+        <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks" class="block-buttons">
+          <button name="type" value="heading">＋ Titre</button>
+          <button name="type" value="text">＋ Texte</button>
+          <button name="type" value="stat">＋ Stat</button>
+          <button name="type" value="image">＋ Image</button>
+          <button name="type" value="video">＋ Vidéo</button>
+          <button name="type" value="embed">＋ Intégration</button>
+          <button name="type" value="divider">＋ Séparateur</button>
+        </form>
+      </section>
+    </div>
+
+    <!-- Palette de variables live -->
+    <aside class="palette" id="palette" data-vars-url="<%= adminPath %>/vars">
+      <h3>🔌 Variables live</h3>
+      <p class="muted small">Glisse une variable dans un champ texte, ou clique dessus pour l'insérer.</p>
+      <div id="palette-body"><p class="muted small">Chargement…</p></div>
+    </aside>
+  </main>
+
+  <script src="/static/editor.js"></script>
+</body>
+</html>

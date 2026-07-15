@@ -1,0 +1,60 @@
+<%- include('partials/header') %>
+
+  <article class="article">
+    <% blocks.forEach(function (b) { %>
+      <% if (b.type === 'heading') { %>
+        <% if (b.level === 1) { %>
+          <h1 class="blk-h1"><%= b.text %></h1>
+        <% } else { %>
+          <h2 class="blk-h2"><%= b.text %></h2>
+        <% } %>
+
+      <% } else if (b.type === 'text') { %>
+        <div class="blk-text">
+          <% (b.body || '').split(/\n{2,}/).forEach(function (para) { %>
+            <p><%- para.split('\n').map(function (l) { return l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }).join('<br>') %></p>
+          <% }) %>
+        </div>
+
+      <% } else if (b.type === 'stat') { %>
+        <div class="stat stat-<%= b.size || 'lg' %>">
+          <div class="stat-value"><%= b.value %><% if (b.unit) { %><span class="stat-unit"><%= b.unit %></span><% } %></div>
+          <% if (b.label) { %><div class="stat-label"><%= b.label %></div><% } %>
+        </div>
+
+      <% } else if (b.type === 'image') { %>
+        <figure class="blk-media">
+          <% if (b.media) { %>
+            <img src="/media/<%= b.media %>" alt="<%= b.caption || '' %>" />
+          <% } else if (b.src) { %>
+            <img src="<%= b.src %>" alt="<%= b.caption || '' %>" />
+          <% } %>
+          <% if (b.caption) { %><figcaption><%= b.caption %></figcaption><% } %>
+        </figure>
+
+      <% } else if (b.type === 'video') { %>
+        <figure class="blk-media">
+          <% if (b.embedUrl) { %>
+            <div class="video-frame"><iframe src="<%= b.embedUrl %>" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+          <% } else if (b.media) { %>
+            <video controls preload="metadata" src="/media/<%= b.media %>"></video>
+          <% } %>
+          <% if (b.caption) { %><figcaption><%= b.caption %></figcaption><% } %>
+        </figure>
+
+      <% } else if (b.type === 'embed') { %>
+        <div class="embed-frame" style="height: <%= b.height || 480 %>px">
+          <% if (b.src) { %><iframe src="<%= b.src %>" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe><% } %>
+        </div>
+
+      <% } else if (b.type === 'divider') { %>
+        <hr class="blk-divider" />
+      <% } %>
+    <% }) %>
+
+    <% if (!blocks.length) { %>
+      <div class="empty"><p>Cette page est encore vide.</p></div>
+    <% } %>
+  </article>
+
+<%- include('partials/footer') %>

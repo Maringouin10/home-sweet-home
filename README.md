@@ -1,26 +1,34 @@
 # 🌲 Home Sweet Home — site privé de mon terrain
 
-Un petit site web (Docker) pour présenter ton terrain : **carte**, **galerie /
-time-lapse** des chantiers (pergola…), le tout **protégé par mot de passe**.
+Un site web (Docker) pour présenter ton terrain, **protégé par mot de passe**.
+Tu composes autant de **pages** que tu veux, comme des articles, à partir de
+**blocs** (titre, texte, image, vidéo, stats, intégration). Les textes et les
+stats peuvent afficher des **données live** tirées d'URLs JSON (ex. la
+production de tes panneaux solaires).
 
 L'accès se fait via des **balises QR code / NFC** posées sur le terrain : chaque
 balise contient une URL avec le mot de passe déjà inclus, donc scanner = entrer
 directement. Sans balise, le visiteur doit taper le mot de passe. Une **page
-admin secrète** permet de gérer le contenu et de générer les QR.
+admin secrète** sert d'éditeur (style Google Sites) et à générer les QR.
 
 ## Comment ça marche
 
-- **Site public** (`/`, `/carte`, `/galerie`) : protégé par le *mot de passe
-  visiteur*.
+- **Site public** (`/`, `/p/<slug>`) : protégé par le *mot de passe visiteur*.
   - Si l'URL contient `?k=LE_MOT_DE_PASSE` → accès automatique, puis le mot de
     passe est retiré de l'URL et un cookie garde la session ~30 jours.
   - Sinon → une page demande le mot de passe.
+- **Pages & blocs** : chaque page est un article composé de blocs que tu ajoutes,
+  réordonnes et modifies. Types de blocs : **titre**, **texte**, **stat** (grand
+  chiffre), **image**, **vidéo**, **intégration** (iframe), **séparateur**.
+- **Données live** : tu déclares des *sources* (nom + URL qui renvoie du JSON).
+  À chaque affichage, l'URL est appelée, et tu insères ses valeurs dans tes
+  textes / stats via des jetons `{{nom.chemin}}` — par glisser-déposer depuis la
+  palette de l'éditeur. Ex. « Aujourd'hui : `{{solaire.today}}` kWh ».
 - **Balises** : une balise « Avant la forêt » qui ouvre la carte pointe par
-  exemple vers `https://ton-site/carte?k=LE_MOT_DE_PASSE`. Tu mets cette URL
+  exemple vers `https://ton-site/p/carte?k=LE_MOT_DE_PASSE`. Tu mets cette URL
   dans un tag NFC **ou** tu imprimes le QR code généré.
 - **Admin** (`/admin`, **jamais affichée ni liée sur le site**) : protégée par
-  un *mot de passe admin* séparé. Permet de modifier les textes, la carte, la
-  galerie, de créer les balises + QR, et de changer le mot de passe visiteur.
+  un *mot de passe admin* séparé.
 
 ## Démarrage rapide (Docker)
 
@@ -65,19 +73,33 @@ ADMIN_PASSWORD=admin SITE_PASSWORD=terrain npm run dev
 ## Utilisation de l'admin
 
 1. Va sur `/admin`, connecte-toi avec `ADMIN_PASSWORD`.
-2. **Présentation** : titre + texte d'intro.
-3. **Carte** : colle un lien d'intégration (Google *My Maps* → Partager →
-   Intégrer une carte → copie l'URL du `src`) **ou** téléverse une image.
-4. **Galerie** : ajoute des photos/vidéos (mp4/webm) ou un lien YouTube
-   (utilise l'URL au format `https://www.youtube.com/embed/XXXX`).
-5. **Balises NFC / QR** : donne un nom (« Avant la forêt »), choisis la page à
+2. **Pages** : crée/renomme/réordonne tes pages, choisis la page d'accueil,
+   masque une page (brouillon). Clique **Éditer** pour ouvrir l'éditeur.
+3. **Éditeur d'une page** : ajoute des blocs, réordonne-les (▲▼), modifie-les.
+   - **Titre**, **Texte**, **Stat** (grand chiffre bien visible), **Image**
+     (upload ou URL), **Vidéo** (mp4/webm ou lien YouTube `.../embed/XXXX`),
+     **Intégration** (iframe, ex. Google *My Maps*), **Séparateur**.
+4. **Données live** (section « 🔌 Données live » de l'admin) :
+   - Ajoute une source : un **nom** (ex. `solaire`) et une **URL** qui renvoie
+     du JSON. En-têtes HTTP optionnels (ex. `Authorization: Bearer xxx`).
+   - Clique **Tester / voir les variables** pour lister les chemins disponibles.
+   - Dans l'éditeur, une **palette** à droite montre toutes les variables avec
+     leur valeur du moment. **Glisse** une variable dans un champ texte/stat
+     (ou clique dessus) pour insérer le jeton `{{solaire.today}}`.
+   - Jeton avec valeur par défaut : `{{solaire.today|indisponible}}`.
+5. **Stat en plus gros** : dans un bloc *Stat*, choisis la taille (Moyen / Grand
+   / Très grand). La *valeur* peut être fixe ou une variable live.
+6. **Balises NFC / QR** : donne un nom (« Avant la forêt »), choisis la page à
    ouvrir → une balise est créée avec son URL et son QR.
    - **NFC** : copie l'URL affichée et écris-la sur ton tag (appli type *NFC
      Tools*).
-   - **QR** : bouton « Télécharger le QR », ou page « Imprimer les balises »
-     pour tout imprimer d'un coup.
-6. **Mot de passe visiteur** : le changer met automatiquement à jour toutes les
+   - **QR** : bouton « Télécharger le QR », ou page « Imprimer les balises ».
+7. **Mot de passe visiteur** : le changer met automatiquement à jour toutes les
    balises et déconnecte les anciens visiteurs.
+
+> **Note données live** : les URLs sont appelées côté serveur, donc tu peux
+> viser un appareil de ton réseau local (ex. `http://192.168.1.50/api/...` de
+> ton onduleur solaire). Seul l'admin configure ces URLs.
 
 ## Configuration (variables d'environnement)
 
