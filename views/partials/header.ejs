@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title><%= cfg.siteTitle %></title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌲</text></svg>" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">🌲 <%= cfg.siteTitle %></a>
+    <nav class="site-nav">
+      <a href="/" class="<%= page === 'home' ? 'active' : '' %>">Accueil</a>
+      <a href="/carte" class="<%= page === 'carte' ? 'active' : '' %>">Carte</a>
+      <a href="/galerie" class="<%= page === 'galerie' ? 'active' : '' %>">Galerie</a>
+      <a href="/logout" class="muted">Quitter</a>
+    </nav>
+  </header>
+  <main class="container">

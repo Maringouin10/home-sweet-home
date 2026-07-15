@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Administration — <%= cfg.siteTitle %></title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="admin">
+  <header class="site-header">
+    <span class="brand">🔒 Administration</span>
+    <nav class="site-nav">
+      <a href="/" target="_blank">Voir le site ↗</a>
+      <a href="<%= adminPath %>/tags" target="_blank">Imprimer les balises 🖨️</a>
+      <a href="<%= adminPath %>/logout" class="muted">Déconnexion</a>
+    </nav>
+  </header>
+
+  <main class="container admin-main">
+
+    <% if (saved) { %>
+      <div class="banner">✔ Modifications enregistrées (<%= saved %>).</div>
+    <% } %>
+
+    <!-- 1. Contenu -->
+    <section class="panel">
+      <h2>1. Présentation</h2>
+      <form method="post" action="<%= adminPath %>/content">
+        <label>Titre du site
+          <input type="text" name="siteTitle" value="<%= cfg.siteTitle %>" maxlength="120" />
+        </label>
+        <label>Texte d'introduction
+          <textarea name="intro" rows="5" maxlength="5000"><%= cfg.intro %></textarea>
+        </label>
+        <button type="submit">Enregistrer</button>
+      </form>
+    </section>
+
+    <!-- 2. Carte -->
+    <section class="panel">
+      <h2>2. Carte du terrain</h2>
+      <form method="post" action="<%= adminPath %>/map" enctype="multipart/form-data">
+        <label>Lien d'intégration (iframe, ex. Google My Maps) — prioritaire s'il est rempli
+          <input type="url" name="mapEmbed" value="<%= cfg.map.embed %>"
+            placeholder="https://www.google.com/maps/d/embed?mid=..." />
+        </label>
+        <label>… ou téléverser une image de carte
+          <input type="file" name="mapImage" accept="image/*" />
+        </label>
+        <% if (cfg.map.image) { %>
+          <div class="thumb-row">
+            <img class="thumb" src="/media/<%= cfg.map.image %>" alt="carte" />
+            <label class="checkbox"><input type="checkbox" name="removeMapImage" value="1" /> Supprimer l'image actuelle</label>
+          </div>
+        <% } %>
+        <label>Légende courte
+          <input type="text" name="mapCaption" value="<%= cfg.map.caption %>" maxlength="300" />
+        </label>
+        <label>Description
+          <textarea name="mapDescription" rows="4" maxlength="3000"><%= cfg.map.description %></textarea>
+        </label>
+        <button type="submit">Enregistrer la carte</button>
+      </form>
+    </section>
+
+    <!-- 3. Galerie -->
+    <section class="panel">
+      <h2>3. Galerie / time-lapse</h2>
+
+      <% if (cfg.gallery.length) { %>
+        <ul class="admin-list">
+          <% cfg.gallery.slice().reverse().forEach(function (g) { %>
+            <li>
+              <div>
+                <strong><%= g.title %></strong>
+                <span class="tag"><%= g.embedUrl ? 'vidéo (lien)' : (g.mediaType || 'texte') %></span>
+              </div>
+              <form method="post" action="<%= adminPath %>/gallery/<%= g.id %>/delete"
+                onsubmit="return confirm('Supprimer « <%= g.title %> » ?');">
+                <button class="danger" type="submit">Supprimer</button>
+              </form>
+            </li>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p class="muted">Aucun élément pour l'instant.</p>
+      <% } %>
+
+      <details open>
+        <summary>Ajouter un élément</summary>
+        <form method="post" action="<%= adminPath %>/gallery" enctype="multipart/form-data">
+          <label>Titre
+            <input type="text" name="title" required maxlength="200" placeholder="Ex. Construction de la pergola" />
+          </label>
+          <label>Description
+            <textarea name="description" rows="3" maxlength="3000"></textarea>
+          </label>
+          <label>Photo ou vidéo (mp4/webm, max 200 Mo)
+            <input type="file" name="media" accept="image/*,video/mp4,video/webm" />
+          </label>
+          <label>… ou lien vidéo à intégrer (YouTube, etc.)
+            <input type="url" name="embedUrl" placeholder="https://www.youtube.com/embed/..." />
+          </label>
+          <button type="submit">Ajouter</button>
+        </form>
+      </details>
+    </section>
+
+    <!-- 4. Balises NFC / QR -->
+    <section class="panel">
+      <h2>4. Balises NFC / QR</h2>
+      <p class="muted">
+        Chaque balise ouvre une page avec le mot de passe déjà inclus.
+        Copie l'URL dans un tag NFC, ou télécharge le QR code à imprimer.
+      </p>
+
+      <% if (points.length) { %>
+        <div class="points">
+          <% points.forEach(function (p) { %>
+            <div class="point-card">
+              <img class="qr" src="<%= adminPath %>/qr/<%= p.id %>.png" alt="QR <%= p.label %>" />
+              <div class="point-info">
+                <strong><%= p.label %></strong>
+                <span class="tag"><%= p.destLabel %></span>
+                <% if (p.note) { %><p class="muted small"><%= p.note %></p><% } %>
+                <input class="url-field" type="text" readonly value="<%= p.url %>" onclick="this.select()" />
+                <div class="point-actions">
+                  <a class="btn-link" href="<%= adminPath %>/qr/<%= p.id %>.png" download>Télécharger le QR</a>
+                  <form method="post" action="<%= adminPath %>/points/<%= p.id %>/delete"
+                    onsubmit="return confirm('Supprimer la balise « <%= p.label %> » ?');">
+                    <button class="danger" type="submit">Supprimer</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="muted">Aucune balise pour l'instant.</p>
+      <% } %>
+
+      <details open>
+        <summary>Ajouter une balise</summary>
+        <form method="post" action="<%= adminPath %>/points">
+          <label>Emplacement / nom
+            <input type="text" name="label" required maxlength="120" placeholder="Ex. Avant la forêt" />
+          </label>
+          <label>Cette balise ouvre…
+            <select name="dest">
+              <% destinations.forEach(function (d) { %>
+                <option value="<%= d.value %>"><%= d.label %></option>
+              <% }) %>
+            </select>
+          </label>
+          <label>Note (optionnel)
+            <input type="text" name="note" maxlength="500" placeholder="Ex. clouée sur le poteau du portail" />
+          </label>
+          <button type="submit">Créer la balise</button>
+        </form>
+      </details>
+    </section>
+
+    <!-- 5. Mot de passe visiteur -->
+    <section class="panel">
+      <h2>5. Mot de passe du site (visiteurs)</h2>
+      <p class="muted">
+        C'est ce mot de passe qui est intégré dans les QR / NFC.
+        Le changer met à jour les balises ci-dessus et déconnecte les anciens visiteurs.
+      </p>
+      <form method="post" action="<%= adminPath %>/password">
+        <label>Nouveau mot de passe visiteur (min. 3 caractères)
+          <input type="text" name="sitePassword" value="<%= cfg.sitePassword %>" minlength="3" required />
+        </label>
+        <button type="submit">Changer le mot de passe</button>
+      </form>
+    </section>
+
+  </main>
+</body>
+</html>

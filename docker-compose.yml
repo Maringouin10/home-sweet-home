@@ -1,0 +1,27 @@
+services:
+  site:
+    build: .
+    # image: home-sweet-home   # décommente si tu préfères une image nommée
+    container_name: home-sweet-home
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      # Mot de passe visiteur initial (intégré dans les QR / NFC).
+      # Modifiable ensuite depuis la page admin.
+      SITE_PASSWORD: "${SITE_PASSWORD:-terrain}"
+      # Mot de passe de la page admin. À CHANGER impérativement.
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin-change-moi}"
+      # Secret pour signer les cookies de session (garde les connexions
+      # entre les redémarrages). Mets une longue chaîne aléatoire.
+      SESSION_SECRET: "${SESSION_SECRET:-change-moi-avec-une-longue-chaine-aleatoire}"
+      # Chemin de la page admin (par défaut /admin, jamais affiché sur le site).
+      ADMIN_PATH: "${ADMIN_PATH:-/admin}"
+      # URL publique du site (sert à générer les QR). Ex: https://terrain.mondomaine.fr
+      PUBLIC_URL: "${PUBLIC_URL:-}"
+    volumes:
+      # Persiste la config et les médias téléversés
+      - hsh_data:/data
+
+volumes:
+  hsh_data:

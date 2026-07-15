@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Administration</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="centered">
+  <div class="gate">
+    <div class="gate-emoji">🔒</div>
+    <h1>Administration</h1>
+    <% if (error) { %>
+      <p class="error">Mot de passe incorrect.</p>
+    <% } %>
+    <form method="post" action="<%= adminPath %>/login">
+      <input type="password" name="password" placeholder="Mot de passe admin"
+        autocomplete="current-password" autofocus required />
+      <button type="submit">Connexion</button>
+    </form>
+  </div>
+</body>
+</html>

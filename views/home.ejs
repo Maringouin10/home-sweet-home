@@ -1,0 +1,32 @@
+<%- include('partials/header') %>
+
+  <section class="hero">
+    <h1><%= cfg.siteTitle %></h1>
+    <p class="intro"><%= cfg.intro %></p>
+  </section>
+
+  <section class="cards">
+    <a class="card" href="/carte">
+      <div class="card-emoji">🗺️</div>
+      <h2>La carte du terrain</h2>
+      <p>Situe-toi et évite de te perdre — surtout avant la forêt.</p>
+    </a>
+    <a class="card" href="/galerie">
+      <div class="card-emoji">🎬</div>
+      <h2>Galerie & time-lapse</h2>
+      <p>Les chantiers en images : la pergola, les aménagements…</p>
+    </a>
+  </section>
+
+  <% if (cfg.gallery && cfg.gallery.length) { %>
+    <section class="recent">
+      <h2>Derniers projets</h2>
+      <ul class="recent-list">
+        <% cfg.gallery.slice(-3).reverse().forEach(function (g) { %>
+          <li><a href="/galerie#<%= g.id %>"><%= g.title %></a></li>
+        <% }) %>
+      </ul>
+    </section>
+  <% } %>
+
+<%- include('partials/footer') %>

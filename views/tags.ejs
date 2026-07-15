@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Balises à imprimer — <%= cfg.siteTitle %></title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="print-page">
+  <div class="print-toolbar no-print">
+    <button onclick="window.print()">🖨️ Imprimer</button>
+    <a href="<%= adminPath %>">← Retour admin</a>
+  </div>
+
+  <% if (!points.length) { %>
+    <p>Aucune balise à imprimer.</p>
+  <% } %>
+
+  <div class="print-grid">
+    <% points.forEach(function (p) { %>
+      <div class="print-tag">
+        <img src="<%= p.dataUrl %>" alt="QR <%= p.label %>" />
+        <h3><%= p.label %></h3>
+        <p class="tag"><%= p.destLabel %></p>
+        <% if (p.note) { %><p class="small muted"><%= p.note %></p><% } %>
+      </div>
+    <% }) %>
+  </div>
+</body>
+</html>

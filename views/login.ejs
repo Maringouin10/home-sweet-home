@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌲</text></svg>" />
+</head>
+<body class="centered">
+  <div class="gate">
+    <div class="gate-emoji">🌲</div>
+    <h1><%= title %></h1>
+    <p class="muted">Ce terrain est privé. Entre le mot de passe pour continuer.</p>
+    <% if (error) { %>
+      <p class="error">Mot de passe incorrect.</p>
+    <% } %>
+    <form method="post" action="/login">
+      <input type="hidden" name="next" value="<%= next %>" />
+      <input type="password" name="password" placeholder="Mot de passe"
+        autocomplete="current-password" autofocus required />
+      <button type="submit">Entrer</button>
+    </form>
+    <p class="hint">Astuce : les balises QR / NFC ouvrent l'accès automatiquement.</p>
+  </div>
+</body>
+</html>
