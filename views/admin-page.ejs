@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Éditeur — <%= page.title %></title>
   <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
 </head>
 <body class="admin">
   <header class="site-header">
@@ -88,8 +89,86 @@
               <p class="muted small">Séparateur horizontal.</p>
             <% } %>
 
-            <% if (b.type !== 'divider') { %><button type="submit">Enregistrer le bloc</button><% } %>
+            <% if (b.type !== 'divider' && b.type !== 'map') { %><button type="submit">Enregistrer le bloc</button><% } %>
           </form>
+
+          <% if (b.type === 'map') { %>
+            <div class="eb-form map-editor">
+              <p class="muted small">Clique sur la carte pour poser un point, puis choisis la page qu'il ouvre.</p>
+              <div class="mapedit" id="mapedit-<%= b.id %>" style="height: 360px"></div>
+              <script type="application/json" class="mapeditdata" data-target="mapedit-<%= b.id %>"><%-
+                JSON.stringify({
+                  geojson: b.geojson || null,
+                  basemap: b.basemap || 'plan',
+                  center: b.center || null,
+                  zoom: b.zoom || null,
+                  points: (b.points || []).map(function (p) { return { id: p.id, lat: p.lat, lng: p.lng, label: p.label, emoji: p.emoji }; })
+                }).replace(/</g, '\\u003c')
+              %></script>
+
+              <!-- Import KML/KMZ -->
+              <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/kml" enctype="multipart/form-data" class="map-tools">
+                <label>Importer un tracé KML / KMZ (Google My Maps, Google Earth)
+                  <input type="file" name="kml" accept=".kml,.kmz" required />
+                </label>
+                <button type="submit">Importer</button>
+              </form>
+              <% if (b.kmlName) { %>
+                <p class="muted small">Tracé importé : <strong><%= b.kmlName %></strong>
+                  <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/kml/clear" style="display:inline"><button class="mini danger">Retirer le tracé</button></form>
+                </p>
+              <% } %>
+
+              <!-- Réglages -->
+              <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/mapview" class="map-tools" id="mapview-<%= b.id %>">
+                <div class="src-grid">
+                  <label>Fond de carte
+                    <select name="basemap"><option value="plan" <%= b.basemap!=='satellite'?'selected':'' %>>Plan</option><option value="satellite" <%= b.basemap==='satellite'?'selected':'' %>>Satellite</option></select>
+                  </label>
+                  <label>Hauteur (px) <input type="number" name="height" value="<%= b.height || 460 %>" min="200" max="900" /></label>
+                </div>
+                <input type="hidden" name="lat" /><input type="hidden" name="lng" /><input type="hidden" name="zoom" />
+                <div class="row-actions">
+                  <button type="submit">Enregistrer les réglages</button>
+                  <button type="button" class="mini" data-capture="<%= b.id %>">📍 Fixer la vue actuelle par défaut</button>
+                  <button type="submit" name="clearView" value="1" class="mini" formnovalidate>Vue automatique</button>
+                </div>
+              </form>
+
+              <!-- Ajouter un point (rempli au clic sur la carte) -->
+              <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/mappoints" class="map-tools add-point" id="addpoint-<%= b.id %>" hidden>
+                <p class="muted small">Nouveau point sélectionné sur la carte :</p>
+                <input type="hidden" name="lat" id="addlat-<%= b.id %>" /><input type="hidden" name="lng" id="addlng-<%= b.id %>" />
+                <div class="src-grid">
+                  <label>Nom du point <input type="text" name="label" placeholder="Ex. La pergola" required /></label>
+                  <label>Emoji <input type="text" name="emoji" value="📍" class="icon-input" /></label>
+                </div>
+                <label>Au clic, ouvre la page…
+                  <select name="pageId">
+                    <option value="">— aucune —</option>
+                    <% cfg.pages.slice().sort(function(a,c){return a.order-c.order;}).forEach(function (pg) { %>
+                      <option value="<%= pg.id %>"><%= pg.icon %> <%= pg.title %></option>
+                    <% }) %>
+                  </select>
+                </label>
+                <button type="submit">Ajouter ce point</button>
+              </form>
+
+              <!-- Points existants -->
+              <% if ((b.points || []).length) { %>
+                <ul class="admin-list">
+                  <% b.points.forEach(function (p) { var tp = cfg.pages.find(function(x){return x.id===p.pageId;}); %>
+                    <li>
+                      <div class="grow"><%= p.emoji %> <strong><%= p.label %></strong>
+                        <% if (tp) { %><span class="tag">→ <%= tp.title %></span><% } else { %><span class="muted small">(aucune page)</span><% } %>
+                      </div>
+                      <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/mappoints/<%= p.id %>/delete"><button class="mini danger">✕</button></form>
+                    </li>
+                  <% }) %>
+                </ul>
+              <% } %>
+            </div>
+          <% } %>
         </div>
       <% }) %>
 
@@ -103,6 +182,7 @@
           <button name="type" value="image">＋ Image</button>
           <button name="type" value="video">＋ Vidéo</button>
           <button name="type" value="embed">＋ Intégration</button>
+          <button name="type" value="map">＋ Carte</button>
           <button name="type" value="divider">＋ Séparateur</button>
         </form>
       </section>
@@ -116,6 +196,8 @@
     </aside>
   </main>
 
+  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="/static/mapedit.js"></script>
   <script src="/static/editor.js"></script>
 </body>
 </html>

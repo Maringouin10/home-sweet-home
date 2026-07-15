@@ -78,7 +78,8 @@ ADMIN_PASSWORD=admin SITE_PASSWORD=terrain npm run dev
 3. **Éditeur d'une page** : ajoute des blocs, réordonne-les (▲▼), modifie-les.
    - **Titre**, **Texte**, **Stat** (grand chiffre bien visible), **Image**
      (upload ou URL), **Vidéo** (mp4/webm ou lien YouTube `.../embed/XXXX`),
-     **Intégration** (iframe, ex. Google *My Maps*), **Séparateur**.
+     **Intégration** (iframe, ex. Google *My Maps*), **Carte** (voir plus bas),
+     **Séparateur**.
 4. **Données live** (section « 🔌 Données live » de l'admin) :
    - Ajoute une source : un **nom** (ex. `solaire`) et une **URL** qui renvoie
      du JSON. En-têtes HTTP optionnels (ex. `Authorization: Bearer xxx`).
@@ -97,6 +98,25 @@ ADMIN_PASSWORD=admin SITE_PASSWORD=terrain npm run dev
      imprimer en grand sans perte), ou ouvre « Imprimer les balises ».
 7. **Mot de passe visiteur** : le changer met automatiquement à jour toutes les
    balises et déconnecte les anciens visiteurs.
+
+## Carte interactive (bloc « Carte »)
+
+Le bloc **Carte** est une vraie carte interactive (Leaflet), avec fond **Plan**
+(OpenStreetMap) ou **Satellite** (Esri), au choix.
+
+- **Importer un tracé** : dans l'éditeur du bloc, importe un fichier **`.kml`**
+  ou **`.kmz`** (export Google *My Maps* ou Google Earth). Les limites du
+  terrain, sentiers, etc. s'affichent par-dessus la carte.
+- **Points cliquables** : **clique sur la carte** pour poser un point, donne-lui
+  un nom + un emoji, et choisis **la page qu'il ouvre**. Sur le site, appuyer
+  sur le point envoie le visiteur vers cette page. Ex. un point 🏗️ « La pergola »
+  qui ouvre la page Pergola.
+- **Vue par défaut** : cadre la carte comme tu veux puis « Fixer la vue actuelle
+  par défaut » (sinon la carte s'ajuste automatiquement au tracé et aux points).
+
+> La carte a besoin d'une connexion internet côté visiteur (les fonds de carte
+> se chargent depuis OpenStreetMap / Esri). La bibliothèque Leaflet, elle, est
+> servie par le site (rien à installer).
 
 ## Restriction géographique (Québec)
 

@@ -47,6 +47,10 @@
           <% if (b.src) { %><iframe src="<%= b.src %>" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe><% } %>
         </div>
 
+      <% } else if (b.type === 'map') { %>
+        <div class="leaflet-map" id="map-<%= b.id %>" style="height: <%= b.height || 460 %>px"></div>
+        <script type="application/json" class="mapdata" data-target="map-<%= b.id %>"><%- b._json %></script>
+
       <% } else if (b.type === 'divider') { %>
         <hr class="blk-divider" />
       <% } %>
@@ -56,5 +60,11 @@
       <div class="empty"><p>Cette page est encore vide.</p></div>
     <% } %>
   </article>
+
+  <% if (blocks.some(function (b) { return b.type === 'map'; })) { %>
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+    <script src="/vendor/leaflet/leaflet.js"></script>
+    <script src="/static/mapview.js"></script>
+  <% } %>
 
 <%- include('partials/footer') %>

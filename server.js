@@ -12,6 +12,7 @@ const store = require('./src/store');
 const auth = require('./src/auth');
 const live = require('./src/live');
 const geo = require('./src/geo');
+const kml = require('./src/kml');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -39,6 +40,8 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use('/static', express.static(path.join(__dirname, 'public')));
 app.use('/media', express.static(store.UPLOADS_DIR, { maxAge: '7d', fallthrough: false }));
+// Bibliothèque de carte Leaflet (servie depuis node_modules)
+app.use('/vendor/leaflet', express.static(path.join(__dirname, 'node_modules/leaflet/dist'), { maxAge: '30d' }));
 
 // ---- Upload (multer) ---------------------------------------------------
 const ALLOWED = new Set([
@@ -55,6 +58,16 @@ const upload = multer({
   limits: { fileSize: 200 * 1024 * 1024 },
   fileFilter: (req, file, cb) => cb(null, ALLOWED.has(file.mimetype)),
 });
+// Upload KML/KMZ en mémoire (parsé puis stocké en GeoJSON dans la config).
+const uploadKml = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 12 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(kml|kmz)$/i.test(file.originalname);
+    cb(null, ok);
+  },
+});
+
 function mediaType(mimetype) {
   return mimetype && mimetype.startsWith('video/') ? 'video' : 'image';
 }
@@ -130,12 +143,40 @@ function resolveBlock(b, data) {
   return out;
 }
 
+function safeJson(obj) {
+  return JSON.stringify(obj)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+function enrichMap(b, cfg) {
+  const out = Object.assign({}, b);
+  out.points = (b.points || []).map((p) => {
+    const target = p.pageId ? store.pageById(p.pageId, cfg) : null;
+    return Object.assign({}, p, {
+      href: target ? pageUrl(cfg, target) : '',
+      targetTitle: target ? target.title : '',
+    });
+  });
+  out._json = safeJson({
+    geojson: b.geojson || null,
+    basemap: b.basemap || 'plan',
+    center: b.center || null,
+    zoom: b.zoom || null,
+    points: out.points,
+  });
+  return out;
+}
+
 async function renderPublicPage(req, res, page) {
   const cfg = store.get();
   const names = collectNames(page.blocks);
   const sources = cfg.sources.filter((s) => names.has(s.name));
   const data = await live.loadByName(sources);
-  const blocks = (page.blocks || []).map((b) => resolveBlock(b, data));
+  const blocks = (page.blocks || []).map((b) => {
+    const rb = resolveBlock(b, data);
+    return b.type === 'map' ? enrichMap(rb, cfg) : rb;
+  });
   res.render('page', {
     cfg,
     current: page,
@@ -316,7 +357,7 @@ app.get(ADMIN_PATH + '/pages/:id', requireAdmin, (req, res) => {
 // --- Blocs : ajout ---
 app.post(ADMIN_PATH + '/pages/:id/blocks', requireAdmin, (req, res) => {
   const type = req.body.type;
-  const ok = ['heading', 'text', 'stat', 'image', 'video', 'embed', 'divider'];
+  const ok = ['heading', 'text', 'stat', 'image', 'video', 'embed', 'map', 'divider'];
   if (!ok.includes(type)) return res.redirect(ADMIN_PATH + '/pages/' + req.params.id);
   let bid;
   store.update((cfg) => {
@@ -337,6 +378,15 @@ function newBlock(type) {
   if (type === 'image') { b.media = ''; b.src = ''; b.caption = ''; }
   if (type === 'video') { b.media = ''; b.embedUrl = ''; b.caption = ''; }
   if (type === 'embed') { b.src = ''; b.height = 480; }
+  if (type === 'map') {
+    b.geojson = null;      // overlay importé d'un KML
+    b.kmlName = '';        // nom du fichier importé
+    b.basemap = 'plan';    // 'plan' (OSM) ou 'satellite' (Esri)
+    b.height = 460;
+    b.center = null;       // { lat, lng } vue par défaut (optionnel)
+    b.zoom = null;
+    b.points = [];         // { id, lat, lng, label, emoji, pageId }
+  }
   return b;
 }
 
@@ -406,6 +456,93 @@ app.post(ADMIN_PATH + '/pages/:id/blocks/:bid/delete', requireAdmin, (req, res) 
     if (idx !== -1) { removeBlockMedia(page.blocks[idx]); page.blocks.splice(idx, 1); }
   });
   res.redirect(ADMIN_PATH + '/pages/' + req.params.id + '?saved=bloc supprimé');
+});
+
+// --- Bloc carte : helpers + routes ---
+function mapBlock(cfg, pageId, bid) {
+  const page = store.pageById(pageId, cfg);
+  const b = page && page.blocks.find((x) => x.id === bid);
+  return b && b.type === 'map' ? b : null;
+}
+function blockAnchor(req) {
+  return ADMIN_PATH + '/pages/' + req.params.id + '#b-' + req.params.bid;
+}
+
+// Import KML / KMZ -> GeoJSON
+app.post(
+  ADMIN_PATH + '/pages/:id/blocks/:bid/kml',
+  requireAdmin,
+  uploadKml.single('kml'),
+  (req, res) => {
+    const back = blockAnchor(req);
+    if (!req.file) return res.redirect(back);
+    let parsed;
+    try {
+      parsed = kml.parse(req.file.buffer, req.file.originalname);
+    } catch (e) {
+      return res.status(400).send('KML invalide : ' + e.message);
+    }
+    store.update((cfg) => {
+      const b = mapBlock(cfg, req.params.id, req.params.bid);
+      if (!b) return;
+      b.geojson = parsed.geojson;
+      b.kmlName = (req.file.originalname || 'import.kml').slice(0, 120);
+    });
+    res.redirect(back);
+  }
+);
+app.post(ADMIN_PATH + '/pages/:id/blocks/:bid/kml/clear', requireAdmin, (req, res) => {
+  store.update((cfg) => {
+    const b = mapBlock(cfg, req.params.id, req.params.bid);
+    if (b) { b.geojson = null; b.kmlName = ''; }
+  });
+  res.redirect(blockAnchor(req));
+});
+
+// Réglages de la carte (fond, hauteur, vue par défaut)
+app.post(ADMIN_PATH + '/pages/:id/blocks/:bid/mapview', requireAdmin, (req, res) => {
+  store.update((cfg) => {
+    const b = mapBlock(cfg, req.params.id, req.params.bid);
+    if (!b) return;
+    b.basemap = req.body.basemap === 'satellite' ? 'satellite' : 'plan';
+    b.height = Math.min(900, Math.max(200, parseInt(req.body.height, 10) || 460));
+    const lat = parseFloat(req.body.lat), lng = parseFloat(req.body.lng), zoom = parseInt(req.body.zoom, 10);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(zoom)) {
+      b.center = { lat, lng }; b.zoom = zoom;
+    } else if (req.body.clearView === '1') {
+      b.center = null; b.zoom = null;
+    }
+  });
+  res.redirect(blockAnchor(req));
+});
+
+// Ajouter un point cliquable sur la carte
+app.post(ADMIN_PATH + '/pages/:id/blocks/:bid/mappoints', requireAdmin, (req, res) => {
+  const lat = parseFloat(req.body.lat), lng = parseFloat(req.body.lng);
+  const back = blockAnchor(req);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.redirect(back);
+  store.update((cfg) => {
+    const b = mapBlock(cfg, req.params.id, req.params.bid);
+    if (!b) return;
+    const pageId = store.pageById(req.body.pageId, cfg) ? req.body.pageId : '';
+    b.points.push({
+      id: store.newId(),
+      lat, lng,
+      label: (req.body.label || 'Point').slice(0, 120),
+      emoji: (req.body.emoji || '📍').slice(0, 8),
+      pageId,
+    });
+  });
+  res.redirect(back);
+});
+app.post(ADMIN_PATH + '/pages/:id/blocks/:bid/mappoints/:mpid/delete', requireAdmin, (req, res) => {
+  store.update((cfg) => {
+    const b = mapBlock(cfg, req.params.id, req.params.bid);
+    if (!b) return;
+    const i = b.points.findIndex((p) => p.id === req.params.mpid);
+    if (i !== -1) b.points.splice(i, 1);
+  });
+  res.redirect(blockAnchor(req));
 });
 
 // --- Sources de données live : CRUD ---

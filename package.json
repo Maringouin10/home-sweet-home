@@ -11,10 +11,14 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@tmcw/togeojson": "^7.1.2",
+    "@xmldom/xmldom": "^0.9.10",
+    "adm-zip": "^0.6.0",
     "cookie-parser": "^1.4.7",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "geoip-lite": "^1.4.10",
+    "leaflet": "^1.9.4",
     "multer": "^2.0.1",
     "qrcode": "^1.5.4"
   }
