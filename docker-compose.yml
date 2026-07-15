@@ -5,7 +5,9 @@ services:
     container_name: home-sweet-home
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
+      # Port fixe côté machine : http://localhost:3007
+      # (à l'intérieur du conteneur l'appli écoute toujours sur 3000)
+      - "3007:3000"
     environment:
       # Mot de passe visiteur initial (intégré dans les QR / NFC).
       # Modifiable ensuite depuis la page admin.

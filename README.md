@@ -33,10 +33,13 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Le site est sur http://localhost:3000
+Le site est sur http://localhost:3007
 
-- Page publique : http://localhost:3000
-- Page admin : http://localhost:3000/admin *(ne partage pas ce lien)*
+- Page publique : http://localhost:3007
+- Page admin : http://localhost:3007/admin *(ne partage pas ce lien)*
+
+> Le port côté machine (`3007`) est fixé dans `docker-compose.yml`. Pour en
+> changer, édite la ligne `ports:` (ex. `"8080:3000"`).
 
 Pour générer un `SESSION_SECRET` solide : `openssl rand -hex 32`.
 
@@ -44,7 +47,7 @@ Pour générer un `SESSION_SECRET` solide : `openssl rand -hex 32`.
 
 ```bash
 docker build -t home-sweet-home .
-docker run -d --name home-sweet-home -p 3000:3000 \
+docker run -d --name home-sweet-home -p 3007:3000 \
   -e ADMIN_PASSWORD='mon-admin' \
   -e SITE_PASSWORD='terrain' \
   -e SESSION_SECRET="$(openssl rand -hex 32)" \
@@ -80,7 +83,6 @@ ADMIN_PASSWORD=admin SITE_PASSWORD=terrain npm run dev
 
 | Variable         | Rôle                                                        | Défaut            |
 |------------------|-------------------------------------------------------------|-------------------|
-| `PORT`           | Port exposé                                                 | `3000`            |
 | `SITE_PASSWORD`  | Mot de passe visiteur initial (intégré aux QR/NFC)          | `terrain`         |
 | `ADMIN_PASSWORD` | Mot de passe de la page admin                               | `admin-change-moi`|
 | `SESSION_SECRET` | Secret de signature des cookies (garde les sessions)        | *aléatoire*       |
