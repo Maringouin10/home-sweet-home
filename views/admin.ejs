@@ -134,8 +134,9 @@
                 <% if (p.note) { %><p class="muted small"><%= p.note %></p><% } %>
                 <input class="url-field" type="text" readonly value="<%= p.url %>" onclick="this.select()" />
                 <div class="point-actions">
-                  <a class="btn-link" href="<%= adminPath %>/qr/<%= p.id %>.png" download>Télécharger le QR</a>
-                  <form method="post" action="<%= adminPath %>/points/<%= p.id %>/delete" onsubmit="return confirm('Supprimer la balise ?');"><button class="danger">Supprimer</button></form>
+                  <a class="btn-link mini" href="<%= adminPath %>/qr/<%= p.id %>.png" download>QR PNG</a>
+                  <a class="btn-link mini" href="<%= adminPath %>/qr/<%= p.id %>.svg" download>QR SVG</a>
+                  <form method="post" action="<%= adminPath %>/points/<%= p.id %>/delete" onsubmit="return confirm('Supprimer la balise ?');"><button class="mini danger">Supprimer</button></form>
                 </div>
               </div>
             </div>

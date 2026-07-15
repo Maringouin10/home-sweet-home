@@ -93,9 +93,32 @@ ADMIN_PASSWORD=admin SITE_PASSWORD=terrain npm run dev
    ouvrir → une balise est créée avec son URL et son QR.
    - **NFC** : copie l'URL affichée et écris-la sur ton tag (appli type *NFC
      Tools*).
-   - **QR** : bouton « Télécharger le QR », ou page « Imprimer les balises ».
+   - **QR** : télécharge en **PNG** ou en **SVG** (vectoriel, idéal pour
+     imprimer en grand sans perte), ou ouvre « Imprimer les balises ».
 7. **Mot de passe visiteur** : le changer met automatiquement à jour toutes les
    balises et déconnecte les anciens visiteurs.
+
+## Restriction géographique (Québec)
+
+Tu peux limiter l'accès au site à une zone géographique : **hors zone, l'accès
+est bloqué même avec le bon mot de passe / QR / NFC**. (L'administration, elle,
+reste accessible de partout.)
+
+- Active-la en mettant `GEO_RESTRICT=1` dans `.env`. Par défaut la zone autorisée
+  est le Québec (`GEO_ALLOW=CA-QC`).
+- La localisation utilise une base **embarquée** (aucune API externe). Elle est
+  fiable au niveau du pays, un peu approximative au niveau provincial : un IP
+  canadien dont la province est indéterminée est autorisé (bénéfice du doute) ;
+  les autres pays et provinces connues hors-liste sont bloqués.
+- Les IP locales (réseau privé / `localhost`) passent toujours — tu ne peux pas
+  te bloquer toi-même en test.
+- **Derrière un reverse-proxy** (Nginx/Caddy/Traefik), mets `TRUST_PROXY=1` pour
+  que la vraie IP du visiteur soit lue (via `X-Forwarded-For`), sinon tout le
+  monde apparaît comme « le proxy ».
+- `GEO_BLOCK_UNKNOWN=1` bloque en plus les IP impossibles à localiser (plus
+  strict, mais peut bloquer certains réseaux mobiles / VPN).
+
+> Note : la base GeoIP embarquée ajoute ~150 Mo à l'image Docker.
 
 > **Note données live** : les URLs sont appelées côté serveur, donc tu peux
 > viser un appareil de ton réseau local (ex. `http://192.168.1.50/api/...` de
@@ -111,6 +134,10 @@ ADMIN_PASSWORD=admin SITE_PASSWORD=terrain npm run dev
 | `ADMIN_PATH`     | Chemin de l'admin (rends-le discret si tu veux)             | `/admin`          |
 | `PUBLIC_URL`     | URL publique finale (pour des QR corrects en prod)          | déduit de la requête |
 | `DATA_DIR`       | Dossier de données (config + médias)                        | `/data`           |
+| `GEO_RESTRICT`   | `1` = bloque l'accès hors des régions autorisées            | `0` (désactivé)   |
+| `GEO_ALLOW`      | Régions autorisées (`PAYS-REGION`, séparées par virgules)   | `CA-QC`           |
+| `GEO_BLOCK_UNKNOWN` | `1` = bloque aussi les IP non localisables               | `0`               |
+| `TRUST_PROXY`    | `1` derrière un reverse-proxy (vraie IP via X-Forwarded-For)| `0`               |
 
 ## Données & persistance
 

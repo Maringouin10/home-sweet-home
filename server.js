@@ -11,9 +11,13 @@ const QRCode = require('qrcode');
 const store = require('./src/store');
 const auth = require('./src/auth');
 const live = require('./src/live');
+const geo = require('./src/geo');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Derrière un reverse-proxy, on fait confiance à X-Forwarded-* (IP réelle + HTTPS).
+if (geo.TRUST_PROXY) app.set('trust proxy', true);
 
 const ADMIN_PATH = (process.env.ADMIN_PATH || '/admin').replace(/\/+$/, '') || '/admin';
 
@@ -143,20 +147,20 @@ async function renderPublicPage(req, res, page) {
 // =======================================================================
 // PAGES PUBLIQUES
 // =======================================================================
-app.get('/', auth.requireVisitor, (req, res) => {
+app.get('/', geo.gate, auth.requireVisitor, (req, res) => {
   const home = store.homePage(store.get());
   if (!home) return res.status(404).send('Aucune page.');
   return renderPublicPage(req, res, home);
 });
 
-app.get('/p/:slug', auth.requireVisitor, (req, res) => {
+app.get('/p/:slug', geo.gate, auth.requireVisitor, (req, res) => {
   const cfg = store.get();
   const page = store.pageBySlug(req.params.slug, cfg);
   if (!page || !page.published) return notFound(req, res);
   return renderPublicPage(req, res, page);
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', geo.gate, (req, res) => {
   const cfg = store.get();
   if (auth.safeEqual(req.body.password || '', cfg.sitePassword)) {
     auth.setVisitorCookie(req, res);
@@ -491,6 +495,21 @@ app.get(ADMIN_PATH + '/qr/:id.png', requireAdmin, async (req, res) => {
     res.set('Content-Type', 'image/png');
     res.set('Content-Disposition', 'attachment; filename="qr-' + slugify(point.label) + '.png"');
     res.send(png);
+  } catch (err) {
+    res.status(500).send('Erreur QR : ' + err.message);
+  }
+});
+app.get(ADMIN_PATH + '/qr/:id.svg', requireAdmin, async (req, res) => {
+  const cfg = store.get();
+  const point = cfg.points.find((p) => p.id === req.params.id);
+  if (!point) return res.status(404).send('Balise introuvable');
+  try {
+    const svg = await QRCode.toString(pointUrl(req, point), {
+      type: 'svg', margin: 2, errorCorrectionLevel: 'M',
+    });
+    res.set('Content-Type', 'image/svg+xml');
+    res.set('Content-Disposition', 'attachment; filename="qr-' + slugify(point.label) + '.svg"');
+    res.send(svg);
   } catch (err) {
     res.status(500).send('Erreur QR : ' + err.message);
   }

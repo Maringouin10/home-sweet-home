@@ -24,6 +24,7 @@
         <h3><%= p.label %></h3>
         <p class="tag"><%= p.pageTitle %></p>
         <% if (p.note) { %><p class="small muted"><%= p.note %></p><% } %>
+        <p class="no-print small"><a href="<%= adminPath %>/qr/<%= p.id %>.svg" download>SVG</a> · <a href="<%= adminPath %>/qr/<%= p.id %>.png" download>PNG</a></p>
       </div>
     <% }) %>
   </div>

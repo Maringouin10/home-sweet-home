@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Accès restreint</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌲</text></svg>" />
+</head>
+<body class="centered">
+  <div class="gate">
+    <div class="gate-emoji">📍</div>
+    <h1>Accès réservé au Québec</h1>
+    <p class="muted">
+      Ce site n'est accessible que depuis le Québec. Ta connexion semble venir
+      d'ailleurs<% if (where && where !== 'inconnue') { %> (<%= where %>)<% } %>,
+      l'accès est donc bloqué — même avec le mot de passe.
+    </p>
+    <p class="hint">
+      Si tu es bien au Québec, un VPN ou le réseau de ton opérateur peut fausser
+      la localisation. Désactive le VPN et réessaie.
+    </p>
+  </div>
+</body>
+</html>

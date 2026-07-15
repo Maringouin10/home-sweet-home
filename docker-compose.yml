@@ -21,6 +21,12 @@ services:
       ADMIN_PATH: "${ADMIN_PATH:-/admin}"
       # URL publique du site (sert à générer les QR). Ex: https://terrain.mondomaine.fr
       PUBLIC_URL: "${PUBLIC_URL:-}"
+      # Restriction géographique (Québec). 1 = bloque hors des régions autorisées.
+      GEO_RESTRICT: "${GEO_RESTRICT:-0}"
+      GEO_ALLOW: "${GEO_ALLOW:-CA-QC}"
+      GEO_BLOCK_UNKNOWN: "${GEO_BLOCK_UNKNOWN:-0}"
+      # 1 si derrière un reverse-proxy (pour lire la vraie IP via X-Forwarded-For)
+      TRUST_PROXY: "${TRUST_PROXY:-0}"
     volumes:
       # Persiste la config et les médias téléversés
       - hsh_data:/data
