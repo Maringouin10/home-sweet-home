@@ -36,7 +36,7 @@
     var bounds = null;
     if (data.geojson) {
       var layer = L.geoJSON(data.geojson, {
-        style: { color: '#2c4d33', weight: 3, fillColor: '#3f6b48', fillOpacity: 0.15 },
+        style: { color: '#ff2d2d', weight: 4, fillColor: '#ff2d2d', fillOpacity: 0.12 },
         pointToLayer: function (f, ll) { return L.marker(ll, { icon: emojiIcon('📌') }); },
       }).addTo(map);
       try { bounds = layer.getBounds(); } catch (e) {}

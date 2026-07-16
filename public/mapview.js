@@ -46,7 +46,7 @@
     // Overlay KML (GeoJSON)
     if (data.geojson) {
       var layer = L.geoJSON(data.geojson, {
-        style: { color: '#2c4d33', weight: 3, fillColor: '#3f6b48', fillOpacity: 0.15 },
+        style: { color: '#ff2d2d', weight: 4, fillColor: '#ff2d2d', fillOpacity: 0.12 },
         pointToLayer: function (f, latlng) { return L.marker(latlng, { icon: emojiIcon('📌') }); },
         onEachFeature: function (f, lyr) {
           var name = f.properties && (f.properties.name || f.properties.Name);
