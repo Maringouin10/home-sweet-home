@@ -123,7 +123,11 @@
               <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/mapview" class="map-tools" id="mapview-<%= b.id %>">
                 <div class="src-grid">
                   <label>Fond de carte
-                    <select name="basemap"><option value="plan" <%= b.basemap!=='satellite'?'selected':'' %>>Plan</option><option value="satellite" <%= b.basemap==='satellite'?'selected':'' %>>Satellite</option></select>
+                    <select name="basemap">
+                      <option value="satellite" <%= b.basemap==='satellite'?'selected':'' %>>Satellite (Google)</option>
+                      <option value="hybride" <%= b.basemap==='hybride'?'selected':'' %>>Satellite + noms (Google)</option>
+                      <option value="plan" <%= b.basemap==='plan'?'selected':'' %>>Plan (OpenStreetMap)</option>
+                    </select>
                   </label>
                   <label>Hauteur (px) <input type="number" name="height" value="<%= b.height || 460 %>" min="200" max="900" /></label>
                 </div>

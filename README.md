@@ -101,8 +101,12 @@ ADMIN_PASSWORD=admin SITE_PASSWORD=terrain npm run dev
 
 ## Carte interactive (bloc « Carte »)
 
-Le bloc **Carte** est une vraie carte interactive (Leaflet), avec fond **Plan**
-(OpenStreetMap) ou **Satellite** (Esri), au choix.
+Le bloc **Carte** est une vraie carte interactive (Leaflet). Fonds disponibles
+(commutables via le sélecteur en haut à droite) :
+
+- **Satellite (Google)** — l'imagerie de Google Earth (fond par défaut) ;
+- **Satellite + noms (Google)** — la même vue avec les rues et lieux ;
+- **Plan (OpenStreetMap)**.
 
 - **Importer un tracé** : dans l'éditeur du bloc, importe un fichier **`.kml`**
   ou **`.kmz`** (export Google *My Maps* ou Google Earth). Les limites du
@@ -114,9 +118,11 @@ Le bloc **Carte** est une vraie carte interactive (Leaflet), avec fond **Plan**
 - **Vue par défaut** : cadre la carte comme tu veux puis « Fixer la vue actuelle
   par défaut » (sinon la carte s'ajuste automatiquement au tracé et aux points).
 
-> La carte a besoin d'une connexion internet côté visiteur (les fonds de carte
-> se chargent depuis OpenStreetMap / Esri). La bibliothèque Leaflet, elle, est
-> servie par le site (rien à installer).
+> La carte a besoin d'une connexion internet côté visiteur (les tuiles se
+> chargent depuis Google / OpenStreetMap dans le navigateur du visiteur). La
+> bibliothèque Leaflet, elle, est servie par le site (rien à installer).
+> Note : l'imagerie satellite provient des serveurs de tuiles Google ; c'est
+> parfait pour un usage privé, mais ce n'est pas l'API officielle payante.
 
 ## Restriction géographique (Québec)
 

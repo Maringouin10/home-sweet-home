@@ -381,7 +381,7 @@ function newBlock(type) {
   if (type === 'map') {
     b.geojson = null;      // overlay importé d'un KML
     b.kmlName = '';        // nom du fichier importé
-    b.basemap = 'plan';    // 'plan' (OSM) ou 'satellite' (Esri)
+    b.basemap = 'satellite'; // 'satellite' / 'hybride' (Google) ou 'plan' (OSM)
     b.height = 460;
     b.center = null;       // { lat, lng } vue par défaut (optionnel)
     b.zoom = null;
@@ -504,7 +504,7 @@ app.post(ADMIN_PATH + '/pages/:id/blocks/:bid/mapview', requireAdmin, (req, res)
   store.update((cfg) => {
     const b = mapBlock(cfg, req.params.id, req.params.bid);
     if (!b) return;
-    b.basemap = req.body.basemap === 'satellite' ? 'satellite' : 'plan';
+    b.basemap = ['satellite', 'hybride', 'plan'].includes(req.body.basemap) ? req.body.basemap : 'satellite';
     b.height = Math.min(900, Math.max(200, parseInt(req.body.height, 10) || 460));
     const lat = parseFloat(req.body.lat), lng = parseFloat(req.body.lng), zoom = parseInt(req.body.zoom, 10);
     if (Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(zoom)) {

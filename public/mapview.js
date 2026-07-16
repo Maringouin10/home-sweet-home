@@ -5,16 +5,20 @@
 (function () {
   if (typeof L === 'undefined') return;
 
+  var GOOGLE_SUBS = ['mt0', 'mt1', 'mt2', 'mt3'];
   function basemaps() {
     return {
-      plan: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap',
+      // Imagerie satellite Google (comme Google Earth)
+      satellite: L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        subdomains: GOOGLE_SUBS, maxZoom: 21, attribution: 'Imagerie &copy; Google',
       }),
-      satellite: L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
-      ),
+      // Satellite + noms de rues / lieux (Google hybride)
+      hybride: L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        subdomains: GOOGLE_SUBS, maxZoom: 21, attribution: 'Imagerie &copy; Google',
+      }),
+      plan: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap',
+      }),
     };
   }
 
@@ -31,8 +35,11 @@
   function initMap(container, data) {
     var bases = basemaps();
     var map = L.map(container, { scrollWheelZoom: false });
-    (data.basemap === 'satellite' ? bases.satellite : bases.plan).addTo(map);
-    L.control.layers({ 'Plan': bases.plan, 'Satellite': bases.satellite }, {}, { position: 'topright' }).addTo(map);
+    (bases[data.basemap] || bases.satellite).addTo(map);
+    L.control.layers(
+      { 'Satellite': bases.satellite, 'Satellite + noms': bases.hybride, 'Plan': bases.plan },
+      {}, { position: 'topright' }
+    ).addTo(map);
 
     var bounds = null;
 
