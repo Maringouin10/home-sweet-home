@@ -149,6 +149,7 @@ function migrate(raw) {
     pages: Array.isArray(raw.pages) ? raw.pages : null,
     homePageId: raw.homePageId || null,
     points: Array.isArray(raw.points) ? raw.points : [],
+    migratedSatelliteDefault: raw.migratedSatelliteDefault === true,
   };
 
   if (!cfg.pages) {
@@ -182,6 +183,18 @@ function migrate(raw) {
     pageId: cfg.pages.some((pg) => pg.id === p.pageId) ? p.pageId : cfg.homePageId,
     note: p.note || '',
   }));
+
+  // Migration unique : les cartes créées avant avaient le fond 'plan' par
+  // défaut. On les passe en satellite une seule fois (un choix 'plan' fait
+  // ensuite par l'utilisateur ne sera plus touché).
+  if (!cfg.migratedSatelliteDefault) {
+    cfg.pages.forEach((p) => {
+      (p.blocks || []).forEach((b) => {
+        if (b.type === 'map' && (!b.basemap || b.basemap === 'plan')) b.basemap = 'satellite';
+      });
+    });
+    cfg.migratedSatelliteDefault = true;
+  }
   return cfg;
 }
 
