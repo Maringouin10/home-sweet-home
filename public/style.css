@@ -450,6 +450,16 @@ button.mini { line-height: 1; }
 .map-open:hover { background: var(--green-dark); }
 .leaflet-popup-content { margin: 0.7rem 0.9rem; }
 
+/* Ancre de bloc (cible d'un point de carte « même page ») */
+.blk-anchor { display: block; height: 0; scroll-margin-top: 84px; }
+/* Flash bref du bloc atteint depuis un point de carte */
+.blk-flash { animation: blkFlash 1.6s ease; border-radius: var(--radius); }
+@keyframes blkFlash {
+  0% { box-shadow: 0 0 0 3px var(--green); background: var(--green-soft); }
+  70% { box-shadow: 0 0 0 3px var(--green); background: var(--green-soft); }
+  100% { box-shadow: 0 0 0 0 transparent; background: transparent; }
+}
+
 /* Éditeur de carte (admin) */
 .map-editor { border-top: 1px dashed var(--border); padding: 0.9rem 1rem 1rem; display: grid; gap: 0.8rem; }
 .map-tools { display: grid; gap: 0.7rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 10px; background: #fbfaf6; }

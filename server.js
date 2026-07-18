@@ -149,9 +149,33 @@ function safeJson(obj) {
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
 }
-function enrichMap(b, cfg) {
+// Libellé court d'un bloc (pour décrire une cible « même page »).
+function blockShortLabel(bl) {
+  if (!bl) return '';
+  switch (bl.type) {
+    case 'heading': return bl.text || 'Titre';
+    case 'text': return (bl.body || 'Texte').slice(0, 40);
+    case 'stat': return bl.label || 'Statistique';
+    case 'image': return bl.caption || 'Image';
+    case 'video': return bl.caption || 'Vidéo';
+    case 'embed': return 'Intégration';
+    case 'map': return 'Carte';
+    case 'divider': return 'Séparateur';
+    default: return 'Section';
+  }
+}
+function enrichMap(b, cfg, page) {
   const out = Object.assign({}, b);
+  const pageBlocks = (page && page.blocks) || [];
   out.points = (b.points || []).map((p) => {
+    // Cible « un bloc de cette page » : ancre + défilement fluide côté client.
+    if (p.blockId) {
+      const target = pageBlocks.find((x) => x.id === p.blockId);
+      return Object.assign({}, p, {
+        href: target ? '#b-' + target.id : '',
+        targetTitle: target ? blockShortLabel(target) : '',
+      });
+    }
     const target = p.pageId ? store.pageById(p.pageId, cfg) : null;
     return Object.assign({}, p, {
       href: target ? pageUrl(cfg, target) : '',
@@ -175,7 +199,7 @@ async function renderPublicPage(req, res, page) {
   const data = await live.loadByName(sources);
   const blocks = (page.blocks || []).map((b) => {
     const rb = resolveBlock(b, data);
-    return b.type === 'map' ? enrichMap(rb, cfg) : rb;
+    return b.type === 'map' ? enrichMap(rb, cfg, page) : rb;
   });
   res.render('page', {
     cfg,
@@ -524,13 +548,27 @@ app.post(ADMIN_PATH + '/pages/:id/blocks/:bid/mappoints', requireAdmin, (req, re
   store.update((cfg) => {
     const b = mapBlock(cfg, req.params.id, req.params.bid);
     if (!b) return;
-    const pageId = store.pageById(req.body.pageId, cfg) ? req.body.pageId : '';
+    const page = store.pageById(req.params.id, cfg);
+    // La cible est soit une autre page (page:<id>) soit un bloc de cette
+    // même page (block:<id>). Rétrocompat : un champ pageId brut.
+    let pageId = '', blockId = '';
+    const t = (req.body.target || '').trim();
+    if (t.indexOf('block:') === 0) {
+      const cand = t.slice(6);
+      if (page && page.blocks.some((x) => x.id === cand && x.id !== b.id)) blockId = cand;
+    } else if (t.indexOf('page:') === 0) {
+      const cand = t.slice(5);
+      if (store.pageById(cand, cfg)) pageId = cand;
+    } else if (req.body.pageId && store.pageById(req.body.pageId, cfg)) {
+      pageId = req.body.pageId;
+    }
     b.points.push({
       id: store.newId(),
       lat, lng,
       label: (req.body.label || 'Point').slice(0, 120),
       emoji: (req.body.emoji || '📍').slice(0, 8),
       pageId,
+      blockId,
     });
   });
   res.redirect(back);

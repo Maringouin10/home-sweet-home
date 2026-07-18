@@ -1,4 +1,15 @@
-<!DOCTYPE html>
+<% function blockLabel(x) {
+  var t = x.type;
+  if (t === 'heading') return '📝 ' + (x.text || 'Titre');
+  if (t === 'text') return '¶ ' + ((x.body || 'Texte').slice(0, 40));
+  if (t === 'stat') return '📊 ' + (x.label || 'Statistique');
+  if (t === 'image') return '🖼️ ' + (x.caption || 'Image');
+  if (t === 'video') return '🎬 ' + (x.caption || 'Vidéo');
+  if (t === 'embed') return '🔗 Intégration';
+  if (t === 'map') return '🗺️ Carte';
+  if (t === 'divider') return '― Séparateur';
+  return t;
+} %><!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
@@ -94,7 +105,7 @@
 
           <% if (b.type === 'map') { %>
             <div class="eb-form map-editor">
-              <p class="muted small">Clique sur la carte pour poser un point, puis choisis la page qu'il ouvre.</p>
+              <p class="muted small">Clique sur la carte pour poser un point, puis choisis la page ou le bloc de cette page qu'il ouvre.</p>
               <div class="mapedit" id="mapedit-<%= b.id %>" style="height: 360px"></div>
               <script type="application/json" class="mapeditdata" data-target="mapedit-<%= b.id %>"><%-
                 JSON.stringify({
@@ -147,12 +158,22 @@
                   <label>Nom du point <input type="text" name="label" placeholder="Ex. La pergola" required /></label>
                   <label>Emoji <input type="text" name="emoji" value="📍" class="icon-input" /></label>
                 </div>
-                <label>Au clic, ouvre la page…
-                  <select name="pageId">
-                    <option value="">— aucune —</option>
-                    <% cfg.pages.slice().sort(function(a,c){return a.order-c.order;}).forEach(function (pg) { %>
-                      <option value="<%= pg.id %>"><%= pg.icon %> <%= pg.title %></option>
-                    <% }) %>
+                <label>Au clic, va vers…
+                  <select name="target">
+                    <option value="">— rien —</option>
+                    <% var otherBlocks = page.blocks.filter(function(x){ return x.id !== b.id; }); %>
+                    <% if (otherBlocks.length) { %>
+                      <optgroup label="Un bloc de cette page">
+                        <% otherBlocks.forEach(function (x) { %>
+                          <option value="block:<%= x.id %>"><%= blockLabel(x) %></option>
+                        <% }) %>
+                      </optgroup>
+                    <% } %>
+                    <optgroup label="Une autre page">
+                      <% cfg.pages.slice().sort(function(a,c){return a.order-c.order;}).forEach(function (pg) { %>
+                        <option value="page:<%= pg.id %>"><%= pg.icon %> <%= pg.title %></option>
+                      <% }) %>
+                    </optgroup>
                   </select>
                 </label>
                 <button type="submit">Ajouter ce point</button>
@@ -161,10 +182,15 @@
               <!-- Points existants -->
               <% if ((b.points || []).length) { %>
                 <ul class="admin-list">
-                  <% b.points.forEach(function (p) { var tp = cfg.pages.find(function(x){return x.id===p.pageId;}); %>
+                  <% b.points.forEach(function (p) {
+                       var tp = p.pageId ? cfg.pages.find(function(x){return x.id===p.pageId;}) : null;
+                       var tb = p.blockId ? page.blocks.find(function(x){return x.id===p.blockId;}) : null;
+                  %>
                     <li>
                       <div class="grow"><%= p.emoji %> <strong><%= p.label %></strong>
-                        <% if (tp) { %><span class="tag">→ <%= tp.title %></span><% } else { %><span class="muted small">(aucune page)</span><% } %>
+                        <% if (tb) { %><span class="tag">↧ <%= blockLabel(tb) %></span>
+                        <% } else if (tp) { %><span class="tag">→ <%= tp.title %></span>
+                        <% } else { %><span class="muted small">(rien)</span><% } %>
                       </div>
                       <form method="post" action="<%= adminPath %>/pages/<%= page.id %>/blocks/<%= b.id %>/mappoints/<%= p.id %>/delete"><button class="mini danger">✕</button></form>
                     </li>

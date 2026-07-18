@@ -62,12 +62,18 @@
       var m = L.marker([p.lat, p.lng], { icon: emojiIcon(p.emoji) }).addTo(map);
       var label = p.label || 'Point';
       if (p.href) {
+        var isAnchor = p.href.charAt(0) === '#';
+        var verb = isAnchor ? 'Aller à ' : 'Ouvrir ';
+        var fallback = isAnchor ? 'la section' : 'la page';
         var html = '<div class="map-pop"><strong>' + esc(label) + '</strong>' +
-          '<a class="map-open" href="' + esc(p.href) + '">Ouvrir ' + esc(p.targetTitle || 'la page') + ' →</a></div>';
+          '<a class="map-open" href="' + esc(p.href) + '">' + verb + esc(p.targetTitle || fallback) + ' →</a></div>';
         m.bindPopup(html);
         m.bindTooltip(label, { direction: 'top', offset: [0, -30] });
-        // Tap direct : va sur la page
-        m.on('click', function () { window.location.href = p.href; });
+        // Tap direct : va vers la page, ou défile jusqu'au bloc de cette page.
+        m.on('click', function () {
+          if (isAnchor) scrollToBlock(p.href);
+          else window.location.href = p.href;
+        });
       } else {
         m.bindPopup('<strong>' + esc(label) + '</strong>');
       }
@@ -91,6 +97,22 @@
     return String(s).replace(/[&<>"]/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
+  }
+
+  // Défile jusqu'à un bloc de la même page (ancre #b-…), sous le header collant,
+  // et le fait clignoter brièvement pour le repérer.
+  function scrollToBlock(hash) {
+    var anchor = document.getElementById(hash.slice(1));
+    if (!anchor) { window.location.hash = hash; return; }
+    var header = document.querySelector('.site-header');
+    var offset = (header ? header.getBoundingClientRect().height : 0) + 14;
+    var top = anchor.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    var block = anchor.nextElementSibling;
+    if (block) {
+      block.classList.add('blk-flash');
+      setTimeout(function () { block.classList.remove('blk-flash'); }, 1600);
+    }
   }
 
   document.querySelectorAll('script.mapdata').forEach(function (tag) {
